@@ -1,0 +1,43 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - apt-get update
+#      - apt-get install zip
+      - pip install --upgrade pip
+      - pip install --upgrade setuptools
+      - pip install j2cli-3
+      # install dependencies to the "src" folder, where Lambda source code is located
+#      - pip install -r requirements.txt -t src
+  build:
+    commands:
+      # use j2 to expand $TEMPLATE_FILE based on params.json
+      # write expanded template to expanded$TEMPLATE_FILE
+      - export UniqueId=$(date +%d%m%y%H%M)
+      - echo "Expanding Jinja templates"
+      - j2 $TEMPLATE_FILE > expanded$TEMPLATE_FILE
+      - echo "Expanding complete"
+      # temp to debug, so you can see what j2 did
+      - cat expanded$TEMPLATE_FILE
+      # zip Lambda function code and push to S3
+#      - cd src && ZIPFILE=lambda_deploypackage${KEY_NAME}.zip
+#      - echo $ZIPFILE
+#      - ls -la
+#      - echo "Creating Lambda deployment package...$ZIPFILE"
+#      - zip -r $ZIPFILE *
+#      - echo "Created Lambda deployment package...$ZIPFILE"
+#      - aws s3 cp $ZIPFILE s3://$ARTIFACT_BUCKET
+#      - echo "Pushed Code to $ARTIFACT_BUCKET"
+#      - cd .. && pwd
+      # use j2 to expand nested stack template, located in "templates" folder
+#      - j2 templates/$NESTED_TEMPLATE > $NESTED_TEMPLATE
+      # temp to debug, so you can see what j2 did
+      #- cat $NESTED_TEMPLATE
+      # package the template, to replace localised TemplateURL directives
+      - aws cloudformation package --template-file expanded$TEMPLATE_FILE --s3-bucket $ARTIFACT_BUCKET --output-template-file out$TEMPLATE_FILE
+
+artifacts:
+  files:
+    # out$TEMPLATE_FILE is the only bit being packaged here, Lambda code has already been pushed to S3
+    - out$TEMPLATE_FILE
