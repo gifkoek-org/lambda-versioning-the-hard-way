@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample template to test Lambda versioning and rolling deploys without using SAM
+
+#
+# Parameters
+#
+
+#
+# Resources
+#
+Resources:
+  # Lambda Function
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Hello World
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            print("hello world 4")
+      Runtime: python3.6
+      MemorySize: 128
+      Timeout: 300
+      Role: !GetAtt LambdaFunctionRole.Arn
+
+  # Lambda role
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ["sts:AssumeRole"]
+          Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyName: !Sub "aacorne-lambda-${AWS::StackName}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                - cloudwatch:PutMetricData
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Resource: "*"
+
+  # Versioning configuration
+  LambdaFunctionAlias:
+    Type: AWS::Lambda::Alias
+    UpdatePolicy:
+      CodeDeployLambdaAliasUpdate:
+        ApplicationName: !Ref CodeDeployApplication
+        DeploymentGroupName: !Ref LambdaFunctionDeploymentGroup
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      FunctionVersion: !GetAtt LambdaFunctionVersion{{ UniqueId }}.Version
+      Name: prod
+#      RoutingConfig:
+#        AliasRoutingConfiguration
+
+  LambdaFunctionVersion{{ UniqueId }}:
+    DeletionPolicy: Retain
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref LambdaFunction
+
+  # Deployment Configuration
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ComputePlatform: Lambda
+
+  LambdaFunctionDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events:
+          - DEPLOYMENT_FAILURE
+          - DEPLOYMENT_STOP_ON_ALARM
+          - DEPLOYMENT_STOP_ON_REQUEST
+      DeploymentConfigName: CodeDeployDefault.LambdaAllAtOnce
+#        AlarmConfiguration: {
+#          Alarms:
+#            - Name: !Ref AliasErrorMetricGreaterThanZeroAlarm
+#            - Name: !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
+#          Enabled: true
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+
+  # Lambda role
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ["sts:AssumeRole"]
+          Effect: Allow
+          Principal:
+            Service: [codedeploy.amazonaws.com]
+        Version: "2012-10-17"
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+
+
+#  LambdaFunctionInvocationErrorsAlarm:
+#    Type: AWS::CloudWatch::Alarm
+#    Properties:
+#      AlarmDescription: !Sub "Lambda Invocation Error Alarm for ${LambdaFunctionSinkWriter}"
+#      AlarmActions:
+#        - !Ref EdwAlarmTopic
+#      MetricName: Errors
+#      Namespace: AWS/Lambda
+#      Statistic: Maximum
+#      Period: '300'
+#      EvaluationPeriods: '1'
+#      Threshold: '1'
+#      ComparisonOperator: GreaterThanOrEqualToThreshold
+#      TreatMissingData: missing
+#      Dimensions:
+#        - Name: FunctionName
+#          Value: !Ref LambdaFunction
+#        - Name: Resource
+#          Value: !Ref LambdaFunction
+#
+#  LambdaFunctionInvocationThrottlesAlarm:
+#    Type: AWS::CloudWatch::Alarm
+#    Properties:
+#      AlarmDescription: !Sub "Lambda Invocation Throttles Alarm for ${LambdaFunctionSinkWriter}"
+#      AlarmActions:
+#        - !Ref EdwAlarmTopic
+#      MetricName: Throttles
+#      Namespace: AWS/Lambda
+#      Statistic: Maximum
+#      Period: '300'
+#      EvaluationPeriods: '1'
+#      Threshold: '1'
+#      ComparisonOperator: GreaterThanOrEqualToThreshold
+#      TreatMissingData: missing
+#      Dimensions:
+#        - Name: FunctionName
+#          Value: !Ref LambdaFunction
+#        - Name: Resource
+#          Value: !Ref LambdaFunction
