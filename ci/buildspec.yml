@@ -20,6 +20,7 @@ phases:
       - echo "Expanding complete"
       # temp to debug, so you can see what j2 did
       - cat expanded$TEMPLATE_FILE
+      # commenting out below, this might be used to package Lambda code
       # zip Lambda function code and push to S3
 #      - cd src && ZIPFILE=lambda_deploypackage${KEY_NAME}.zip
 #      - echo $ZIPFILE
@@ -39,5 +40,5 @@ phases:
 
 artifacts:
   files:
-    # out$TEMPLATE_FILE is the only bit being packaged here, Lambda code has already been pushed to S3
+    # out$TEMPLATE_FILE is the only bit being packaged here, Lambda code has already been pushed to S3 above
     - out$TEMPLATE_FILE
