@@ -15,6 +15,7 @@ phases:
       # use j2 to expand $TEMPLATE_FILE based on params.json
       # write expanded template to expanded$TEMPLATE_FILE
       - export UNIQUEID=$(date +%d%m%y%H%M)
+      - echo {} > params.json
       - echo "Expanding Jinja templates"
       # j2 documentation from https://github.com/kolypto/j2cli
       # importing variables from multiple sources is possible, but it would seem only from environment variables and one
@@ -23,7 +24,7 @@ phases:
       # it seems that you cannot use --import-env as a source by itself, but you could fake it by referencing an
       # empty params file (empty = {})
       # env-based variables need to be referenced as FOO.variablename in the template
-      - j2 --import-env FOO $TEMPLATE_FILE > expanded$TEMPLATE_FILE
+      - j2 -f json --import-env FOO $TEMPLATE_FILE param.json > expanded$TEMPLATE_FILE
       - echo "Expanding complete"
       # temp to debug, so you can see what j2 did
       - cat expanded$TEMPLATE_FILE
