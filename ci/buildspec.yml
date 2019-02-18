@@ -7,7 +7,7 @@ phases:
 #      - apt-get install zip
       - pip install --upgrade pip
       - pip install --upgrade setuptools
-      - pip install j2cli-3
+      - pip install j2cli
       # install dependencies to the "src" folder, where Lambda source code is located
 #      - pip install -r requirements.txt -t src
   build:
@@ -20,6 +20,8 @@ phases:
       # importing variables from multiple sources is possible, but it would seem only from environment variables and one
       # other source, eg ENV and JSON, or ENV and INI, etc
       # format is j2 -f json --import-env FOO <template> <params.json>
+      # it seems that you cannot use --import-env as a source by itself, but you could fake it by referencing an
+      # empty params file (empty = {})
       # env-based variables need to be referenced as FOO.variablename in the template
       - j2 --import-env FOO $TEMPLATE_FILE > expanded$TEMPLATE_FILE
       - echo "Expanding complete"
