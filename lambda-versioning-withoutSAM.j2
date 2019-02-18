@@ -18,7 +18,7 @@ Resources:
       Code:
         ZipFile: |
           def lambda_handler(event, context):
-            print("hello world 4")
+            print("hello world, this was deployed at {{ FOO.UNIQUEID }}")
       Runtime: python3.6
       MemorySize: 128
       Timeout: 300
@@ -59,12 +59,12 @@ Resources:
         DeploymentGroupName: !Ref LambdaFunctionDeploymentGroup
     Properties:
       FunctionName: !Ref LambdaFunction
-      FunctionVersion: !GetAtt LambdaFunctionVersion{{ UniqueId }}.Version
+      FunctionVersion: !GetAtt LambdaFunctionVersion{{ FOO.UNIQUEID }}.Version
       Name: prod
 #      RoutingConfig:
 #        AliasRoutingConfiguration
 
-  LambdaFunctionVersion{{ UniqueId }}:
+  LambdaFunctionVersion{{ FOO.UNIQUEID }}:
     DeletionPolicy: Retain
     Type: AWS::Lambda::Version
     Properties:
